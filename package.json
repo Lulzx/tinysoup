@@ -1,0 +1,47 @@
+{
+  "name": "tinysoup",
+  "version": "1.0.0",
+  "description": "Zero-dependency HTML parser and manipulation library for TypeScript/JavaScript. BeautifulSoup-inspired API.",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "bun build src/index.ts --outfile=dist/index.js && bun x tsc --emitDeclarationOnly --declaration --outDir dist",
+    "typecheck": "bun x tsc --noEmit"
+  },
+  "keywords": [
+    "html",
+    "parser",
+    "dom",
+    "scraper",
+    "beautifulsoup",
+    "css-selector",
+    "html-parser",
+    "web-scraping",
+    "zero-dependency"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lulzx/tinysoup.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lulzx/tinysoup/issues"
+  },
+  "homepage": "https://github.com/lulzx/tinysoup#readme",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
