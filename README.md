@@ -124,6 +124,14 @@ els.texts() / els.attrs('href')
 els.matching('.active')
 ```
 
+## Testing
+
+```bash
+bun test
+```
+
+234 tests covering parser, selectors, traversal, manipulation, and sanitization.
+
 ## License
 
 MIT
