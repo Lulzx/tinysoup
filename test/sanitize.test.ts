@@ -34,6 +34,13 @@ describe('sanitize', () => {
     expect(a.attributes.has('href')).toBe(false);
   });
 
+  test('sanitizes javascript: URLs with whitespace', () => {
+    const doc = parse('<a href="java\nscript:alert(1)">Link</a>');
+    sanitize(doc);
+    const a = doc.children[0] as any;
+    expect(a.attributes.has('href')).toBe(false);
+  });
+
   test('allows safe protocols', () => {
     const doc = parse('<a href="https://example.com">Link</a>');
     sanitize(doc);

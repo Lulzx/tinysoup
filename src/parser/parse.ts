@@ -6,7 +6,8 @@ const VOID_ELEMENTS = new Set([
   'link', 'meta', 'param', 'source', 'track', 'wbr'
 ]);
 
-const RAW_TEXT_ELEMENTS = new Set(['script', 'style', 'textarea', 'title']);
+const RAW_TEXT_ELEMENTS = new Set(['script', 'style']);
+const RCDATA_ELEMENTS = new Set(['textarea', 'title']);
 
 const AUTO_CLOSE_MAP: Record<string, Set<string>> = {
   li: new Set(['li']),
@@ -206,17 +207,17 @@ export function parse(html: string, options: ParseOptions = {}): Element {
     };
   }
 
-  function parseRawText(tagName: string): string {
+  function parseRawText(tagName: string, decode: boolean): string {
     const endTag = `</${tagName}`;
     const endIdx = html.toLowerCase().indexOf(endTag.toLowerCase(), pos);
     if (endIdx === -1) {
       const text = html.slice(pos);
       while (pos < len) advance();
-      return text;
+      return decode ? decodeEntities(text) : text;
     }
     const text = html.slice(pos, endIdx);
     while (pos < endIdx) advance();
-    return text;
+    return decode ? decodeEntities(text) : text;
   }
 
   function getElementText(el: Element): string {
@@ -262,7 +263,7 @@ export function parse(html: string, options: ParseOptions = {}): Element {
       } else if (html[pos + 1] === '/') {
         advance(2);
         const nameStart = pos;
-        while (pos < len && /[a-zA-Z0-9]/.test(html[pos])) advance();
+        while (pos < len && /[a-zA-Z0-9:-]/.test(html[pos])) advance();
         const tagName = lowerCaseTags
           ? html.slice(nameStart, pos).toLowerCase()
           : html.slice(nameStart, pos);
@@ -276,7 +277,7 @@ export function parse(html: string, options: ParseOptions = {}): Element {
       } else {
         advance();
         const nameStart = pos;
-        while (pos < len && /[a-zA-Z0-9\-]/.test(html[pos])) advance();
+        while (pos < len && /[a-zA-Z0-9:-]/.test(html[pos])) advance();
         const tagName = lowerCaseTags
           ? html.slice(nameStart, pos).toLowerCase()
           : html.slice(nameStart, pos);
@@ -311,16 +312,19 @@ export function parse(html: string, options: ParseOptions = {}): Element {
 
         const isVoid = xmlMode ? selfClosing : VOID_ELEMENTS.has(tagName);
 
+        const isRawText = RAW_TEXT_ELEMENTS.has(tagName) && !xmlMode;
+        const isRcData = RCDATA_ELEMENTS.has(tagName) && !xmlMode;
+
         if (!selfClosing && !isVoid) {
-          if (RAW_TEXT_ELEMENTS.has(tagName) && !xmlMode) {
-            const rawText = parseRawText(tagName);
+          if (isRawText || isRcData) {
+            const rawText = parseRawText(tagName, isRcData);
             if (rawText) appendChild(element, createText(rawText));
           }
         }
 
         if (applyStrainer(element)) {
           appendChild(current, element);
-          if (!selfClosing && !isVoid && !(RAW_TEXT_ELEMENTS.has(tagName) && !xmlMode)) {
+          if (!selfClosing && !isVoid && !(isRawText || isRcData)) {
             current = element;
           }
         }

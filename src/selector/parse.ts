@@ -47,13 +47,33 @@ export function parseSelector(selector: string): CompiledSelector[] {
 
 function splitByComma(str: string): string[] {
   const parts: string[] = [];
-  let depth = 0;
+  let parenDepth = 0;
+  let bracketDepth = 0;
+  let quote: '"' | "'" | null = null;
   let start = 0;
 
   for (let i = 0; i < str.length; i++) {
-    if (str[i] === '(') depth++;
-    else if (str[i] === ')') depth--;
-    else if (str[i] === ',' && depth === 0) {
+    const ch = str[i];
+
+    if (quote) {
+      if (ch === '\\') {
+        i++;
+        continue;
+      }
+      if (ch === quote) quote = null;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      continue;
+    }
+
+    if (ch === '(') parenDepth++;
+    else if (ch === ')') parenDepth = Math.max(0, parenDepth - 1);
+    else if (ch === '[') bracketDepth++;
+    else if (ch === ']') bracketDepth = Math.max(0, bracketDepth - 1);
+    else if (ch === ',' && parenDepth === 0 && bracketDepth === 0) {
       parts.push(str.slice(start, i));
       start = i + 1;
     }

@@ -97,6 +97,12 @@ describe('querySelectorAll', () => {
     expect(result.length).toBe(3);
   });
 
+  test('handles commas inside attribute selectors', () => {
+    const doc2 = parse('<div data-val="a,b"></div><div data-val="c"></div>');
+    const result = querySelectorAll(doc2, '[data-val="a,b"], [data-val="c"]');
+    expect(result.length).toBe(2);
+  });
+
   test('selects with multiple classes', () => {
     const result = querySelectorAll(doc, '.post.featured');
     expect(result.length).toBe(1);

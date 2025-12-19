@@ -13,6 +13,8 @@ const BOOLEAN_ATTRIBUTES = new Set([
   'readonly', 'required', 'reversed', 'selected', 'truespeed'
 ]);
 
+const RAW_TEXT_ELEMENTS = new Set(['script', 'style']);
+
 function formatAttribute(name: string, value: string, format: OutputFormat): string {
   if (format === 'minimal') {
     if (BOOLEAN_ATTRIBUTES.has(name) && value === '') return ` ${name}`;
@@ -43,7 +45,10 @@ export function serialize(node: Node, options: SerializeOptions = {}): string {
   const { format = 'default', selfClosingTags, emptyAttributes } = options;
 
   if (node.type === 'text') {
-    return escapeHtml((node as TextNode).content);
+    const textNode = node as TextNode;
+    const parentTag = textNode.parent?.tagName;
+    if (parentTag && RAW_TEXT_ELEMENTS.has(parentTag)) return textNode.content;
+    return escapeHtml(textNode.content);
   }
 
   if (node.type === 'comment') {

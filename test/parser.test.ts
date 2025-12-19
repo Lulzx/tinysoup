@@ -70,6 +70,22 @@ describe('parse', () => {
     expect(script.children[0].content).toBe('const x = 1 < 2;');
   });
 
+  test('decodes RCDATA elements', () => {
+    const doc = parse('<textarea>1 &lt; 2</textarea><title>Fish &amp; Chips</title>');
+    const textarea = doc.children[0] as any;
+    const title = doc.children[1] as any;
+    expect(textarea.children[0].content).toBe('1 < 2');
+    expect(title.children[0].content).toBe('Fish & Chips');
+  });
+
+  test('handles custom element closing tags', () => {
+    const doc = parse('<my-tag>One</my-tag><x:tag>Two</x:tag>');
+    const first = doc.children[0] as any;
+    const second = doc.children[1] as any;
+    expect(first.tagName).toBe('my-tag');
+    expect(second.tagName).toBe('x:tag');
+  });
+
   test('auto-closes implicit tags', () => {
     const doc = parse('<ul><li>One<li>Two<li>Three</ul>');
     const ul = doc.children[0] as any;
@@ -123,6 +139,11 @@ describe('serialize', () => {
     const doc = parse('<p>Test</p>');
     (doc.children[0] as any).children[0].content = '<script> & "test"';
     expect(serialize(doc)).toBe('<p>&lt;script&gt; &amp; "test"</p>');
+  });
+
+  test('preserves raw text in script/style', () => {
+    const doc = parse('<script>const x = 1 < 2;</script><style>.a{content:"<"}</style>');
+    expect(serialize(doc)).toBe('<script>const x = 1 < 2;</script><style>.a{content:"<"}</style>');
   });
 
   test('xhtml format uses self-closing', () => {

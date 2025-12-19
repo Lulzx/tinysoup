@@ -16,17 +16,20 @@ const DEFAULT_ALLOWED_ATTRS: Record<string, string[]> = {
 };
 
 const SAFE_URL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:']);
+const CONTROL_OR_SPACE = /[\u0000-\u001F\u007F\s]+/g;
 
 function defaultSanitizeUrl(url: string): string | null {
-  if (url.startsWith('/') || url.startsWith('./') || url.startsWith('../') || url.startsWith('#')) {
-    return url;
+  const trimmed = url.trim();
+  if (trimmed.startsWith('/') || trimmed.startsWith('./') || trimmed.startsWith('../') || trimmed.startsWith('#')) {
+    return trimmed;
   }
-  try {
-    const parsed = new URL(url);
-    return SAFE_URL_PROTOCOLS.has(parsed.protocol) ? url : null;
-  } catch {
-    return (!url.includes(':') || url.indexOf(':') > url.indexOf('/')) ? url : null;
+  const normalized = trimmed.replace(CONTROL_OR_SPACE, '').toLowerCase();
+  const schemeMatch = normalized.match(/^([a-z][a-z0-9+.-]*):/i);
+  if (schemeMatch) {
+    const protocol = schemeMatch[1].toLowerCase() + ':';
+    return SAFE_URL_PROTOCOLS.has(protocol) ? trimmed : null;
   }
+  return trimmed;
 }
 
 export function sanitize(el: Element, options: SanitizeOptions = {}): Element {
@@ -43,6 +46,7 @@ export function sanitize(el: Element, options: SanitizeOptions = {}): Element {
 
   function sanitizeElement(element: Element): Node[] {
     if (stripAll) {
+      element.parent = null;
       return [{ type: 'text', content: getText(element), parent: null } as TextNode];
     }
 
@@ -52,6 +56,7 @@ export function sanitize(el: Element, options: SanitizeOptions = {}): Element {
         if (child.type === 'text') results.push(child);
         else if (child.type === 'element') results.push(...sanitizeElement(child as Element));
       }
+      element.parent = null;
       return results;
     }
 
@@ -69,7 +74,6 @@ export function sanitize(el: Element, options: SanitizeOptions = {}): Element {
         if (sanitized) newAttrs.set(name, sanitized);
         continue;
       }
-      if (value.toLowerCase().includes('javascript:')) continue;
       newAttrs.set(name, value);
     }
 
@@ -93,7 +97,31 @@ export function sanitize(el: Element, options: SanitizeOptions = {}): Element {
     return [element];
   }
 
-  sanitizeElement(el);
+  const originalParent = el.parent;
+  const sanitized = sanitizeElement(el);
+  if (sanitized.length === 1 && sanitized[0] === el) return el;
+
+  if (originalParent) {
+    const idx = originalParent.children.indexOf(el);
+    if (idx !== -1) {
+      originalParent.children.splice(idx, 1, ...sanitized);
+      for (const node of sanitized) node.parent = originalParent;
+    }
+    el.parent = null;
+    return el;
+  }
+
+  if (el.tagName !== '#document') {
+    el.tagName = '#document';
+    el.attributes = new Map();
+    delete el.id;
+    delete el.classList;
+    el.children = [];
+    for (const node of sanitized) {
+      node.parent = el;
+      el.children.push(node);
+    }
+  }
   return el;
 }
 
