@@ -1,6 +1,6 @@
 {
   "name": "tinysoup",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Zero-dependency HTML parser and manipulation library for TypeScript/JavaScript. BeautifulSoup-inspired API.",
   "main": "dist/index.js",
   "module": "dist/index.js",
